@@ -21,12 +21,13 @@ def add_host(cu):
         return json_response(status=500)
 
 
-@app.route('/api/hosts', methods=['GET'])
+@app.route('/api/hosts/<lab_uuid>', methods=['GET'])
 @token_required
-def get_hosts(cu):
-    logger.info('Obteniendo los hosts')
+def get_hosts(cu, lab_uuid):
+    logger.info('Obteniendo los hosts del laboratorio %s', lab_uuid)
     try:
-        hosts = Host.get()
+        lab = Lab.get(lab_uuid)
+        hosts = lab.hosts
         return json_response(data=[h.to_dict() for h in hosts])
     except Exception as e:
         logger.error('No se han podido obtener los hosts: %s', str(e))

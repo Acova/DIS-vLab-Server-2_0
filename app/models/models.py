@@ -249,7 +249,7 @@ class Host(db.Model):
                     code=self.code,
                     ip_address=self.ip_address.compressed,
                     conn_user=self.conn_user,
-                    lab_id=self.lab.id)
+                    lab_id=self.lab.uuid)
 
 
 class Template(db.Model):
