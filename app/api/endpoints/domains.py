@@ -78,6 +78,20 @@ def get_all_domains(cu):
             state = dom.info()[0]
             vnc_port = get_vnc_port(dom)
 
+            # ADDED SUPPORT FOR DISKS
+            xml = ET.fromstring(dom.XMLDesc())
+            devices = xml.findall('devices/disk')
+
+            disk = {}
+
+            for d in devices:
+                if d.get('device') == 'disk':
+                    file_path = d.find('source').get('file')
+                    disk_info = dom.blockInfo(file_path)
+                    disk['capacity'] = round(disk_info[0] / 1024 / 1024 / 1024, 2)
+                    disk['allocation'] = round(disk_info[1] / 1024 / 1024 / 1024, 2)
+                    disk['physical'] = round(disk_info[2] / 1024 / 1024 / 1024, 2)
+
             domains_list.append(dict(uuid=uuid,
                                      name=name,
                                      is_active=is_active,
@@ -85,6 +99,7 @@ def get_all_domains(cu):
                                      memory=memory,
                                      vcpus=vcpus,
                                      state=state,
+                                     disk=disk,
                                      vnc_port=vnc_port))
         conn.close()
         return json_response(data=domains_list)
@@ -181,3 +196,20 @@ def shutdown_domain(cu, domain_uuid):
     except Exception as e:
         logger.error('No se ha podido apagar el dominio %s: %s', domain_uuid, str(e))
         return json_response(status=500)
+
+
+# UPDATE A DOMAIN
+@app.route('/api/domains/<domain_uuid>', methods=['PUT'])
+@token_required
+def update_domain(cu, domain_uuid):
+    logger.info('Actualizando el dominio %s', domain_uuid)
+    data = request.json
+    try:
+        conn = libvirt.open(app.config['LOCAL_QEMU_URI'])
+        dom = conn.lookupByUUIDString(domain_uuid)
+        dom.setMaxMemory(int(data['memory']) * 1024)
+        dom.setVcpusFlags(int(data['vcpus']), libvirt.VIR_DOMAIN_AFFECT_CONFIG | libvirt.VIR_DOMAIN_VCPU_MAXIMUM)
+        dom.setVcpusFlags(int(data['vcpus']))
+    except Exception as e:
+        logger.error("No se ha podido actualizar el dominio %s: %s", domain_uuid, str(e))
+    return json_response(status=200)
