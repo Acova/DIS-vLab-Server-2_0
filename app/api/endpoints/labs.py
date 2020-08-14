@@ -52,3 +52,16 @@ def delete_lab(cu, lab_uuid):
     except Exception as e:
         logger.error('No se pudo eliminar el laboratorio seleccionado: %s', str(e))
         return json_response(status=500)
+
+
+@app.route('/api/labs/<lab_uuid>', methods=['PUT'])
+@token_required
+def update_lab(cu, lab_uuid):
+    logger.info('Actualizando laboratorio %s', lab_uuid)
+    try:
+        lab = Lab.get(lab_uuid)
+        lab.update(request.json)
+        return json_response()
+    except Exception as e:
+        logger.error('No se pudo actualizar el laboratorio %s: %s', lab_uuid, e)
+        return json_response(status=500)

@@ -53,6 +53,7 @@ class Config(db.Model):
         try:
             db.session.commit()
             app.config.update(self.to_dict())
+            print(self.to_dict())
         except Exception as e:
             db.session.rollback()
             raise e
