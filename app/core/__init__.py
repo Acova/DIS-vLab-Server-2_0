@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
 from .config import Config
+from .celery import make_celery
 import logging
 import logging.config
 
@@ -36,12 +37,16 @@ logger = configure_logger('default', 'dvls.log')
 logger.debug('Inicializando aplicación')
 app = Flask(__name__, static_folder='../static')
 app.config.from_object(Config)
+logger.debug('Inicializando celery')
+celery = make_celery(app)
+logger.debug(celery.conf)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 CORS(app, supports_credentials=True)
 
 from app.models import models
 from app.api import api
+
 
 # IMPORTANT!! Comment below lines to make database migrations and upgrades
 if not models.Config.is_initialized():
