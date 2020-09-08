@@ -3,6 +3,7 @@ import paramiko
 import libvirt
 import pickle
 from app.api.utils import *
+from app.api.tasks import templates
 from app.models import *
 from app.core import app, logger
 
@@ -16,78 +17,8 @@ from app.core import app, logger
 @token_required
 def create_template(cu):
     logger.info('Creando plantilla')
-    try:
-        domain_uuid = request.json['domain_uuid']
-        template_name = request.json['template_name']
-        template_description = request.json['template_description']
-        do_sysprep = request.json['do_sysprep']
-
-        # Check domain state
-        conn = libvirt.open(app.config['LOCAL_QEMU_URI'])
-        domain = conn.lookupByUUIDString(domain_uuid)
-        if domain.isActive():
-            logger.error('No se pudo crear la plantilla: el dominio debe estar apagado')
-            return json_response(status=400)
-
-        # Domain cloning (get disks paths and some hardware stuff)
-        info = domain.info()
-        memory = info[2]
-        vcpus = info[3]
-
-        xml = ET.fromstring(domain.XMLDesc())
-        devices = xml.findall('devices/disk')
-        disks = list()
-        for d in devices:
-            if d.get('device') == 'disk':
-                file_path = d.find('source').get('file')
-                disks.append(file_path)
-
-        cmd = ['virt-clone',
-               '--connect', app.config['LOCAL_QEMU_URI'],
-               '--original', domain.name(),
-               '--name', template_name]
-        template_images_path = list()
-        for count in range(disks.__len__()):
-            template_image_path = app.config['TEMPLATE_IMAGES_DIR'] + template_name + '-disk' + str(count) + '.qcow2'
-            template_images_path.append(template_image_path)
-            cmd.append('--file')
-            cmd.append(template_image_path)
-        subprocess.check_call(cmd)
-
-        if do_sysprep:
-            # Decontextualize the template and dumps XML --> USING POLICYKIT WITH 'virt-sysprep'
-            subprocess.check_call(['pkexec', '/usr/bin/virt-sysprep',
-                                   '--connect', app.config['LOCAL_QEMU_URI'],
-                                   '--domain', template_name])
-        template_xml = str(app.config['TEMPLATE_DEFINITIONS_DIR'] + template_name + '.xml')
-        proc = subprocess.Popen(['virsh', '--connect', app.config['LOCAL_QEMU_URI'], 'dumpxml', template_name],
-                                stdout=subprocess.PIPE)
-        out = proc.stdout.read().decode('utf-8')
-        # print(out)
-
-        file = open(str(template_xml), 'w')
-        file.write(out)
-        file.close()
-
-        # Undefine template
-        template = conn.lookupByName(template_name)
-        template.undefine()
-
-        # Add template to database
-
-        data = dict(name=template_name,
-                    description=template_description,
-                    vcpus=vcpus,
-                    memory=memory,
-                    xml_path=template_xml,
-                    images_path=template_images_path)
-        template = Template(data)
-        template.save()
-        return json_response()
-    except Exception as e:
-        # TODO - Delete template on fs if Exception is instance of sqlite3.OperationalError
-        logger.error('No se pudo crear la plantilla: %s', str(e))
-        return json_response(status=500)
+    task = templates.create_template.delay(data=request.json)
+    return json_response(data=task.task_id)
 
 
 # (R) Get all templates

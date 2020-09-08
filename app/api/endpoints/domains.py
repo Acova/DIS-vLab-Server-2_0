@@ -1,6 +1,6 @@
 from app.api.utils import *
 from app.core import app, logger
-import subprocess
+from app.api.tasks import domains
 import libvirt
 import time
 
@@ -14,47 +14,9 @@ import time
 @token_required
 def create_domain(cu):
     logger.info('Creando dominio')
-
     data = request.json
-    cmd = ['virt-install',
-           '--connect', app.config['LOCAL_QEMU_URI'],
-           '--name', data['name'],
-           '--memory', str(data['memory']),
-           '--vcpus', str(data['vcpus']),
-           '--os-variant', data['os_variant'],
-           '--noautoconsole']
-    if data['graphics']['vnc']:
-        cmd.append('--graphics')
-        cmd.append('vnc,listen='+data['graphics']['listen']+',password='+data['graphics']['password'])
-    if data['installation_type'] == "iso":
-        cmd.append('--disk')
-        cmd.append('size='+str(data['disk']['size']))
-        cmd.append('--cdrom')
-        cmd.append(data['cdrom'])
-    elif data['installation_type'] == "image":
-        cmd.append('--disk')
-        cmd.append(data['disk']['path'])
-        cmd.append('--import')
-    elif data['installation_type'] == "network":
-        cmd.append('--disk')
-        cmd.append('size='+str(data['disk']['size']))
-        cmd.append('--location')
-        cmd.append(data['location'])
-    elif data['installation_type'] == "pxe":
-        cmd.append('--disk')
-        cmd.append('size='+str(data['disk']['size']))
-        cmd.append('--network')
-        cmd.append(data['network'])
-        cmd.append('--pxe')
-    else:
-        logger.warn('El método de instalación no es correcto')
-        return json_response(status=400)
-    try:
-        subprocess.check_call(cmd)
-        return json_response()
-    except Exception as e:
-        logger.error('No se ha podido crear el dominio: %s', str(e))
-        return json_response(status=500)
+    task = domains.create_domain.delay(data)
+    return json_response(data=task.task_id)
 
 
 # (R) LIST ALL DOMAINS
