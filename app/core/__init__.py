@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit, send
 from .config import Config
 from .celery import make_celery
 import logging
@@ -38,8 +39,8 @@ logger.debug('Inicializando aplicación')
 app = Flask(__name__, static_folder='../static')
 app.config.from_object(Config)
 logger.debug('Inicializando celery')
+socketio = SocketIO(app, message_queue=app.config['CELERY_BROKER_URL'], cors_allowed_origins='*')
 celery = make_celery(app)
-logger.debug(celery.conf)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 CORS(app, supports_credentials=True)

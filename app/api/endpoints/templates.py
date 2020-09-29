@@ -57,50 +57,5 @@ def delete_template(cu, template_uuid):
 @token_required
 def clone_template(cu, template_uuid):
     logger.info('Desplegando plantilla')
-    try:
-        template = Template.get(template_uuid).to_dict()
-        domain_name = request.json['domain_name']
-        lab_uuid = request.json['lab_uuid']
-
-        lab = Lab.get(lab_uuid)
-        hosts = lab.hosts
-
-        if hosts.__len__() == 0:
-            logger.error('El laboratorio no tiene ningún host asociado')
-            return json_response(status=500)
-
-        cmd = ['virt-clone',
-               '--connect', app.config['LOCAL_QEMU_URI'],
-               '--original-xml', template['xml_path'],
-               '--name', domain_name]
-
-        for count in range(template['images_path'].__len__()):
-            cmd.append('--file')
-            cmd.append(app.config['DOMAIN_IMAGES_DIR'] + domain_name + '-disk' + str(count) + '.qcow2')
-
-        ssh = paramiko.SSHClient()
-        # Surrounds 'known_hosts' error
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        errors = list()
-        for h in hosts:
-            host = h.ip_address
-            username = h.conn_user
-            try:
-                # NO PASSWORD!! Server SSH key is previously distributed among lab PCs
-                ssh.connect(hostname=host.compressed, username=username, timeout=4)
-                ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(' '.join(cmd))
-                errors = [b.rstrip() for b in ssh_stderr.readlines()]
-                if len(errors) > 0:
-                    logger.error('No se pudo desplegar la plantilla en el host %s (%s)', h.code, h.ip_address.compressed)
-                    logger.error(e for e in errors)
-            except Exception as e:
-                logger.error('No se pudo desplegar la plantilla en el host %s (%s): %s', h.code, h.ip_address.compressed, str(e))
-                errors = True
-            finally:
-                ssh.close()
-        if errors or len(errors) > 0:
-            return json_response(status=500)
-        return json_response()
-    except Exception as e:
-        logger.error('No se pudo desplegar la plantilla: %s', str(e))
-        return json_response(status=500)
+    task = templates.clone_template.delay(template_uuid=template_uuid, data=request.json)
+    return json_response(data=task.task_id)

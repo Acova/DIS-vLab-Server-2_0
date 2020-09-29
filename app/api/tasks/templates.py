@@ -1,15 +1,16 @@
 import subprocess
 import paramiko
 import libvirt
-import pickle
+from flask_socketio import SocketIO
 
 from app.api.utils import *
 from app.models import *
 from app.core import celery, app, logger
 
 
-@celery.task()
-def create_template(data):
+@celery.task(bind=True)
+def create_template(self, data):
+    socketio = SocketIO(message_queue=app.config['CELERY_BROKER_URL'])
     try:
         domain_uuid = data['domain_uuid']
         template_name = data['template_name']
@@ -21,6 +22,11 @@ def create_template(data):
         domain = conn.lookupByUUIDString(domain_uuid)
         if domain.isActive():
             logger.error('No se pudo crear la plantilla: el dominio debe estar apagado')
+            socketio.emit('task-finished', {
+                'task_type': 'create-template',
+                'task_id': self.request.id.__str__(),
+                'status': -1
+            })
             return -1
 
         # Domain cloning (get disks paths and some hardware stuff)
@@ -77,16 +83,28 @@ def create_template(data):
                     images_path=template_images_path)
         template = Template(data)
         template.save()
-        print("Plantilla creada")
+        logger.info("Plantilla creada")
+        socketio.emit('task-finished', {
+            'task_type': 'create-template',
+            'task_id': self.request.id.__str__(),
+            'status': 0
+        })
         return 0
     except Exception as e:
         # TODO - Delete template on fs if Exception is instance of sqlite3.OperationalError
         logger.error('No se pudo crear la plantilla: %s', str(e))
+        socketio.emit('task-finished', {
+            'task_type': 'create-template',
+            'task_id': self.request.id.__str__(),
+            'status': -1
+        })
         return -1
 
 
-@celery.task()
-def clone_template(template_uuid, data):
+@celery.task(bind=True)
+def clone_template(self, template_uuid, data):
+    logger.info("Desplegando nueva plantilla")
+    socketio = SocketIO(message_queue=app.config['CELERY_BROKER_URL'])
     try:
         template = Template.get(template_uuid).to_dict()
         domain_name = data['domain_name']
@@ -97,6 +115,11 @@ def clone_template(template_uuid, data):
 
         if hosts.__len__() == 0:
             logger.error('El laboratorio no tiene ningún host asociado')
+            socketio.emit('task-finished', {
+                'task_type': 'clone-template',
+                'task_id': self.request.id.__str__(),
+                'status': -1
+            })
             return -1
 
         cmd = ['virt-clone',
@@ -122,6 +145,7 @@ def clone_template(template_uuid, data):
                 errors = [b.rstrip() for b in ssh_stderr.readlines()]
                 if len(errors) > 0:
                     logger.error('No se pudo desplegar la plantilla en el host %s (%s)', h.code, h.ip_address.compressed)
+                    logger.debug(cmd)
                     logger.error(e for e in errors)
             except Exception as e:
                 logger.error('No se pudo desplegar la plantilla en el host %s (%s): %s', h.code, h.ip_address.compressed, str(e))
@@ -129,8 +153,25 @@ def clone_template(template_uuid, data):
             finally:
                 ssh.close()
         if errors or len(errors) > 0:
+            socketio.emit('task-finished', {
+                'task_type': 'clone-template',
+                'task_id': self.request.id.__str__(),
+                'status': -1
+            })
             return -1
+
+        socketio.emit('task-finished', {
+            'task_type': 'clone-template',
+            'task_id': self.request.id.__str__(),
+            'status': 0
+        })
+        logger.info("Plantilla desplegada correctamente")
         return 0
     except Exception as e:
         logger.error('No se pudo desplegar la plantilla: %s', str(e))
+        socketio.emit('task-finished', {
+            'task_type': 'clone-template',
+            'task_id': self.request.id.__str__(),
+            'status': -1
+        })
         return -1

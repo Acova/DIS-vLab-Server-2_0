@@ -1,13 +1,11 @@
 import subprocess
-import libvirt
-import time
+from flask_socketio import SocketIO
 
-from app.api.utils import *
 from app.core import celery, logger, app
 
 
-@celery.task()
-def create_domain(data):
+@celery.task(bind=True)
+def create_domain(self, data):
     cmd = ['virt-install',
            '--connect', app.config['LOCAL_QEMU_URI'],
            '--name', data['name'],
@@ -40,11 +38,17 @@ def create_domain(data):
         cmd.append('--pxe')
     else:
         logger.warn('El método de instalación no es correcto')
+        socketio = SocketIO(message_queue=app.config['CELERY_BROKER_URL'])
+        socketio.emit('task-finished', {'task_type': 'add-domain', 'task_id': self.request.id.__str__(), 'status': -1})
         return -1
     try:
         subprocess.check_call(cmd)
         logger.info('Dominio creado')
+        socketio = SocketIO(message_queue=app.config['CELERY_BROKER_URL'])
+        socketio.emit('task-finished', {'task_type': 'add-domain', 'task_id': self.request.id.__str__(), 'status': 0})
         return 0
     except Exception as e:
         logger.error('No se ha podido crear el dominio: %s', str(e))
+        socketio = SocketIO(message_queue=app.config['CELERY_BROKER_URL'])
+        socketio.emit('task-finished', {'task_type': 'add-domain', 'task_id': self.request.id.__str__(), 'status': -1})
         return -1
