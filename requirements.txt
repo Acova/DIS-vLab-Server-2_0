@@ -2,6 +2,7 @@ flask
 flask-cors
 flask-sqlalchemy
 flask-migrate
+flask-socketio
 sqlalchemy_utils
 pyjwt
 libvirt-python
@@ -9,3 +10,6 @@ python-pam
 uwsgi
 werkzeug
 paramiko
+celery
+eventlet
+redis
