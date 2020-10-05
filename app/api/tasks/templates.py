@@ -138,19 +138,22 @@ def clone_template(self, template_uuid, data):
         for h in hosts:
             host = h.ip_address
             username = h.conn_user
+            logger.debug('Desplegando en el host %s, IP: %s', h.code, h.ip_address)
             try:
                 # NO PASSWORD!! Server SSH key is previously distributed among lab PCs
+                logger.debug('Conectando al equipo')
                 ssh.connect(hostname=host.compressed, username=username, timeout=4)
                 ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(' '.join(cmd))
                 errors = [b.rstrip() for b in ssh_stderr.readlines()]
                 if len(errors) > 0:
                     logger.error('No se pudo desplegar la plantilla en el host %s (%s)', h.code, h.ip_address.compressed)
-                    logger.debug(cmd)
-                    logger.error(e for e in errors)
+                    logger.error(cmd)
+                    logger.error(errors)
             except Exception as e:
                 logger.error('No se pudo desplegar la plantilla en el host %s (%s): %s', h.code, h.ip_address.compressed, str(e))
                 errors = True
             finally:
+                logger.debug('Desplegado en el equipo %s', h.code)
                 ssh.close()
         if errors or len(errors) > 0:
             socketio.emit('task-finished', {
