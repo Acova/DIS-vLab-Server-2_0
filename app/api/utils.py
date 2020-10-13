@@ -1,6 +1,7 @@
 import os
 import sys
 import jwt
+import subprocess
 from flask import Response, json, request
 from xml.etree import ElementTree as ET
 from functools import wraps
@@ -62,3 +63,9 @@ def ip_range_to_list(start, end):
         ip_set.append(start)
         start += 1
     return ip_set
+
+
+# Kill a running process. Used for the VNC WebSockets
+def kill_process(pid):
+    subprocess.run(['kill', '-s', '9', str(pid)])
+    return 0
