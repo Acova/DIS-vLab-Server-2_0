@@ -17,6 +17,7 @@ def startWebsockify(cu):
     conn_str = 'localhost:' + str(port)
     if (startedWebsockify):
         kill_process(websockifyPid)
+        startedWebsockify = False
 
     proc = subprocess.Popen(['./app/api/tools/websockify/run', 'localhost:6080', conn_str])
     websockifyPid = proc.pid
@@ -31,4 +32,6 @@ def stopWebsockify(cu):
     logger.info('Acabando la conexión de WebSockify')
     pid = request.json['pid']
     kill_process(pid)
+    global startedWebsockify
+    startedWebsockify = False
     return json_response()
