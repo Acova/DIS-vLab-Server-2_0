@@ -147,6 +147,9 @@ You can get a 502 Nginx error when accessing to web interface if you're using SE
 
 Pending
 
+##TO-DO
+Need to specify the necesary changes for the uwsgi and the installation of rabbitmq
+
 ## Author Information
 
 Alberto Sosa, student of Computer Engineering at University of Las Palmas de Gran Canaria, 2018.
