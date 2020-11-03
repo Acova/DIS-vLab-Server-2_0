@@ -7,19 +7,21 @@ DIS vLab Server (DVLS) is a 'full-stack' application to manage virtual labs in t
 1. [Requirements](#requirements)<br>
 2. [Repository and dependencies](#repository-and-dependencies)<br>
 3. [Celery configuration](#celery-configuration)
-3. [System configuration](#system-configuration)<br>
+  i. [Installing RabbitMQ](#installing-rabbitmq)
+  ii. [Creating the Celery service](#creating-the-celery-service)
+4. [System configuration](#system-configuration)<br>
   i. [User and groups](#user-and-groups)<br>
   ii. [Firewall](#firewall)<br>
   ii. [PolicyKit](#policykit)<br>
   iii. [Pluggable Authentication Modules](#pluggable-authentication-modules)<br>
-4. [DVLS Service](#dvls-service)<br>
-5. [Nginx configuration](#nginx-configuration)<br>
+5. [DVLS Service](#dvls-service)<br>
+6. [Nginx configuration](#nginx-configuration)<br>
   i. [Secure Socket Layer](#secure-sockets-layer)<br>
   ii. [Reverse proxy configuration](#reverse-proxy-configuration)<br>
-6. [Accessing to web interface](#accessing-to-web-interface)<br>
-7. [Troubleshooting](#troubleshooting)<br>
-8. [License](#license)<br>
-9. [Author information](#author-information)<br>
+7. [Accessing to web interface](#accessing-to-web-interface)<br>
+8. [Troubleshooting](#troubleshooting)<br>
+9. [License](#license)<br>
+10. [Author information](#author-information)<br>
 
 ## Requirements
 To deploy DVLS you will need have installed CentOS 7.x Minimal installation with [EPEL](https://fedoraproject.org/wiki/EPEL/es) and [IUS](https://ius.io/setup) repositories and these groups/packages:
@@ -54,12 +56,28 @@ Activate the virtual environment with ```# source venv/bin/activate```, and inst
 
 ## Celery configuration
 
+#### Installing RabbitMQ
+
 In order for Celery to work, we need to install the RabbitMQ Broker:
 
 ```bash
 # wget https://www.rabbitmq.com/releases/rabbitmq-server/v3.6.10/rabbitmq-server-3.6.10-1.el7.noarch.rpm
 # rpm --import https://www.rabbitmq.com/rabbitmq-release-signing-key.asc
 # rpm -Uvh rabbitmq-server-3.6.10-1.el7.noarch.rpm
+```
+
+#### Creating the Celery service
+
+Next, we shall create a service so Celery can be used with Systemd. This file must be created under the **/etc/systemd/system/** directory. We will call it celery.service:
+
+```bash
+[Unit]
+Description=Celery Service
+After=network.target
+
+[Service]
+WorkingDirectory=/usr/lib/dvls
+ExecStart=/bin/sh -c '/usr/lib/dvls/venv/bin/celery --app=app.core.celery worker -f /var/log/dvls-worker.log -l DEBUG -E'
 ```
 
 ## System configuration
@@ -112,9 +130,9 @@ Description=uWSGI instance for DIS vLab Server
 After=network.target
 
 [Service]
+Type=simple
 WorkingDirectory=/usr/lib/dvls
-Environment="PATH=/usr/lib/dvls/venv/bin:/usr/bin"
-ExecStart=/usr/lib/dvls/venv/bin/uwsgi --ini dvls.ini
+ExecStart=/usr/lib/dvls/venv/bin/python3.6 /usr/lib/dvls/wsgi.py
 
 [Install]
 WantedBy=multi-user.target
@@ -130,7 +148,7 @@ It's a good practise use HTTPS instead HTTP in web applications inside corporate
 
 #### Reverse proxy configuration
 
-Really, the application server is uWSGI that is included in the project dependencies, so Nginx is working as reverse proxy. Create new config file into **/etc/nginx/conf.d/dvls.conf** with your preferred text editor and fill it with these statement:
+After the implementation of WebSockets, the usage of uWSGI was no longer necesary, as the Socket.IO package creates a production ready server. Anyways, we still neeed to configure Nginx as a reverse proxy, and to translate WebSockets into HTTP.
 ```nginx
 server {
     listen 443 ssl;
@@ -139,13 +157,29 @@ server {
     ssl_certificate_key /etc/nginx/ssl/nginx.key;
 
     location / {
-        include uwsgi_params;
-        uwsgi_pass unix:/usr/lib/dvls/dvls.sock;
+        include proxy_params;
+        proxy_pass http://127.0.0.1:5000;
+    }
+    
+    location /static {
+        alias /usr/lib/dvls/static;
+        expires 30d;
+    }
+    
+    location /socket.io {
+        include proxy_params;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_pass http://127.0.0.1:5000/socket.io
     }
 }
 ```
 
 ## Accessing to web interface
+
+Before to start both the DVLS and Celery services.
 
 Open your preferred browser and navigate via HTTP or HTTPS, depending of your configuration, to ```<protocol>://dvls.dis.ulpgc.es/``` and enter the credentials of dvls user in login page.
 
@@ -160,9 +194,6 @@ You can get a 502 Nginx error when accessing to web interface if you're using SE
 ## License
 
 Pending
-
-## TO-DO
-Need to specify the necesary changes for the uwsgi and the installation of rabbitmq
 
 ## Author Information
 
