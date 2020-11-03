@@ -6,6 +6,7 @@ DIS vLab Server (DVLS) is a 'full-stack' application to manage virtual labs in t
 
 1. [Requirements](#requirements)<br>
 2. [Repository and dependencies](#repository-and-dependencies)<br>
+3. [Celery configuration](#celery-configuration)
 3. [System configuration](#system-configuration)<br>
   i. [User and groups](#user-and-groups)<br>
   ii. [Firewall](#firewall)<br>
@@ -34,6 +35,8 @@ To deploy DVLS you will need have installed CentOS 7.x Minimal installation with
 * "python36u-pip"
 * "nginx"
 * "openssl"
+* "erlang"
+* "socat"
 
 ## Repository and dependencies
 
@@ -48,6 +51,16 @@ You need virtualenv to install Python dependencies. For it, use ```# pip3.6 inst
 # virtualenv venv
 ```
 Activate the virtual environment with ```# source venv/bin/activate```, and install the dependencies with ```(venv) # pip install -r requirements.txt```.
+
+## Celery configuration
+
+In order for Celery to work, we need to install the RabbitMQ Broker:
+
+```bash
+# wget https://www.rabbitmq.com/releases/rabbitmq-server/v3.6.10/rabbitmq-server-3.6.10-1.el7.noarch.rpm
+# rpm --import https://www.rabbitmq.com/rabbitmq-release-signing-key.asc
+# rpm -Uvh rabbitmq-server-3.6.10-1.el7.noarch.rpm
+```
 
 ## System configuration
 
@@ -148,7 +161,7 @@ You can get a 502 Nginx error when accessing to web interface if you're using SE
 
 Pending
 
-##TO-DO
+## TO-DO
 Need to specify the necesary changes for the uwsgi and the installation of rabbitmq
 
 ## Author Information
