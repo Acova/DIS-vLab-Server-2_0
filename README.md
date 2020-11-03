@@ -121,6 +121,14 @@ DVLS uses a PAM Python library to authenticate the user against **/etc/shadow** 
 # echo "auth required pam_unix.so" > /etc/pam.d/dvls 
 ```
 
+#### Working Directories
+
+Create the following directorioes:
+
+* **/var/lib/dvls**
+* **/var/lib/dvls/images**
+* **/var/lib/dvls/qemu**
+
 ## DVLS service
 
 Create a new file into **/etc/systemd/system/** directory, e.g. dvls.service, with these content to handle DVLS application as a system service:
