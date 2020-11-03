@@ -21,7 +21,7 @@ DIS vLab Server (DVLS) is a 'full-stack' application to manage virtual labs in t
 9. [Author information](#author-information)<br>
 
 ## Requirements
-To deploy DVLS you will need have installed CentOS 7.x Minimal installation with [EPEL](https://fedoraproject.org/wiki/EPEL/es) and [IUS](https://ius.io/GettingStarted/) repositories and these groups/packages:
+To deploy DVLS you will need have installed CentOS 7.x Minimal installation with [EPEL](https://fedoraproject.org/wiki/EPEL/es) and [IUS](https://ius.io/setup) repositories and these groups/packages:
 * "Virtualization Platform" (group)
 * "Virtualization Hypervisor" (group)
 * "Virtualization Tools" (group)
@@ -40,7 +40,7 @@ To deploy DVLS you will need have installed CentOS 7.x Minimal installation with
 Clone the repository with source code into recommended directory **/usr/lib**:
 ```bash
 # cd /usr/lib
-# git clone https://www.github.com/albertososa95/dvls.git
+# git clone https://github.com/Acova/DIS-vLab-Server-2_0
 ```
 You need virtualenv to install Python dependencies. For it, use ```# pip3.6 install virtualenv```. Then, create a virtualenv inside DVLS folder:
 ```bash
@@ -71,6 +71,7 @@ CentOS 7 has firewalld running, so you should add a rule for incoming HTTP or HT
 In addition, connections to manage the domains will be made through VNC, so it's necessary to open a range of default ports:
 ```bash
 # firewall-cmd --add-port=5900-5910/tcp --permanent
+# firewall-cmd --add-port=6080/tcp --permanent
 ```
 
 Finally, reload the rules:
