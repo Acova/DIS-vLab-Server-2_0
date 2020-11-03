@@ -19,7 +19,13 @@ def startWebsockify(cu):
         kill_process(websockifyPid)
         startedWebsockify = False
 
-    proc = subprocess.Popen(['./app/api/tools/websockify/run', 'localhost:6080', conn_str])
+    proc = subprocess.Popen(['./app/api/tools/websockify/run',
+                             'localhost:6080',
+                             conn_str,
+                             '--cert',
+                             '/etc/nginx/ssl/nginx.crt',
+                             '--key',
+                             '/etc/nginx/ssl/nginx.key'])
     websockifyPid = proc.pid
     time.sleep(2)
     startedWebsockify = True
