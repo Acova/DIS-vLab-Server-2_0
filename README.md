@@ -6,9 +6,9 @@ DIS vLab Server (DVLS) is a 'full-stack' application to manage virtual labs in t
 
 1. [Requirements](#requirements)<br>
 2. [Repository and dependencies](#repository-and-dependencies)<br>
-3. [Celery configuration](#celery-configuration)
-  i. [Installing RabbitMQ](#installing-rabbitmq)
-  ii. [Creating the Celery service](#creating-the-celery-service)
+3. [Celery configuration](#celery-configuration)<br>
+  i. [Installing RabbitMQ](#installing-rabbitmq)<br>
+  ii. [Creating the Celery service](#creating-the-celery-service)<br>
 4. [System configuration](#system-configuration)<br>
   i. [User and groups](#user-and-groups)<br>
   ii. [Firewall](#firewall)<br>
