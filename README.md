@@ -210,6 +210,8 @@ You can get a 502 Nginx error when accessing to web interface if you're using SE
 # semodule -i nginx.pp
 ```
 
+As the generated certificate is not trusted, you won't be able to connect to the remote desktop. To solve this issue, after you try to connect, visit the site https://localhost:6080 and add the exception to your browser.
+
 ## License
 
 Pending
