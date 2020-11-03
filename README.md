@@ -148,7 +148,8 @@ It's a good practise use HTTPS instead HTTP in web applications inside corporate
 
 #### Reverse proxy configuration
 
-After the implementation of WebSockets, the usage of uWSGI was no longer necesary, as the Socket.IO package creates a production ready server. Anyways, we still neeed to configure Nginx as a reverse proxy, and to translate WebSockets into HTTP.
+After the implementation of WebSockets, the usage of uWSGI was no longer necesary, as the Socket.IO package creates a production ready server. Anyways, we still neeed to configure Nginx as a reverse proxy, and to translate WebSockets into HTTP. Create the file **/etc/nginx/conf.d/dvls.conf**
+
 ```nginx
 server {
     listen 443 ssl;
@@ -175,6 +176,15 @@ server {
         proxy_pass http://127.0.0.1:5000/socket.io
     }
 }
+```
+
+Make sure that the file **/etc/nginx/proxy_params** exists. If not, create it and write this:
+
+```nginx
+proxy_set_header Host $http_host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
 ```
 
 ## Accessing to web interface
