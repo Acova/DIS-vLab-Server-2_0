@@ -14,6 +14,7 @@ DIS vLab Server (DVLS) is a 'full-stack' application to manage virtual labs in t
   ii. [Firewall](#firewall)<br>
   ii. [PolicyKit](#policykit)<br>
   iii. [Pluggable Authentication Modules](#pluggable-authentication-modules)<br>
+  iv. [Working Directories](#working-directories)<br>
 5. [DVLS Service](#dvls-service)<br>
 6. [Nginx configuration](#nginx-configuration)<br>
   i. [Secure Socket Layer](#secure-sockets-layer)<br>
