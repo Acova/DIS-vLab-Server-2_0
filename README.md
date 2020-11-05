@@ -67,6 +67,12 @@ In order for Celery to work, we need to install the RabbitMQ Broker:
 # rpm -Uvh rabbitmq-server-3.6.10-1.el7.noarch.rpm
 ```
 
+Start the RabbitMQ service:
+
+```bash
+# service start rabbitmq-server
+```
+
 #### Creating the Celery service
 
 Next, we shall create a service so Celery can be used with Systemd. This file must be created under the **/etc/systemd/system/** directory. We will call it celery.service:
