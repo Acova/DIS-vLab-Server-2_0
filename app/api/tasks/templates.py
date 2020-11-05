@@ -134,6 +134,7 @@ def clone_template(self, template_uuid, data):
         ssh = paramiko.SSHClient()
         # Surrounds 'known_hosts' error
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        k = paramiko.RSAKey.from_private_key_file("/home/dvls/.ssh/id_rsa")
         errors = list()
         for h in hosts:
             host = h.ip_address
@@ -142,7 +143,7 @@ def clone_template(self, template_uuid, data):
             try:
                 # NO PASSWORD!! Server SSH key is previously distributed among lab PCs
                 logger.debug('Conectando al equipo')
-                ssh.connect(hostname=host.compressed, username=username, timeout=4)
+                ssh.connect(hostname=host.compressed, username=username, timeout=4, pkey=k)
                 ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(' '.join(cmd))
                 errors = [b.rstrip() for b in ssh_stderr.readlines()]
                 if len(errors) > 0:
